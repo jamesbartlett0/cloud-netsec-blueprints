@@ -1,0 +1,56 @@
+graph LR
+    subgraph AWS["AWS Cloud (10.0.0.0/12)"]
+        subgraph AWS_HUB["Hub VPC<br/>10.0.0.0/16"]
+            VGW[Virtual Private Gateway<br/>BGP ASN: 64512]
+            AWS_TGW[Transit Gateway<br/>Direct Spoke Routing]
+            AWS_NAT[NAT Gateways<br/>Centralized Egress]
+        end
+
+        AWS_SPOKE1[Spoke 1: Prod<br/>10.1.0.0/16<br/>Web/App/Data]
+        AWS_SPOKE2[Spoke 2: Dev<br/>10.2.0.0/16<br/>Web/App/Data]
+        AWS_SPOKE3[Spoke 3: Security<br/>10.3.0.0/16<br/>GuardDuty/Config]
+
+        AWS_TGW <--> AWS_SPOKE1
+        AWS_TGW <--> AWS_SPOKE2
+        AWS_TGW <--> AWS_SPOKE3
+        VGW <--> AWS_TGW
+        AWS_NAT -.-> AWS_TGW
+    end
+
+    subgraph VPN_TUNNEL["IPsec VPN Tunnel"]
+        TUNNEL1["🔒 Tunnel 1 (Primary)<br/>169.254.21.0/30<br/>AES256 + IKEv2<br/>BGP Active"]
+        TUNNEL2["🔒 Tunnel 2 (Standby)<br/>169.254.22.0/30<br/>BGP Standby"]
+
+        TUNNEL1 -.->|Failover| TUNNEL2
+    end
+
+    subgraph AZURE["Azure Cloud (10.100.0.0/12)"]
+        subgraph AZURE_HUB["Hub VNet<br/>10.100.0.0/16"]
+            AZURE_VPNGW[VPN Gateway<br/>Active-Active<br/>BGP ASN: 65515]
+            AZURE_FW[Azure Firewall<br/>Centralized Egress]
+        end
+
+        AZURE_SPOKE1[Spoke 1: Prod<br/>10.101.0.0/16<br/>Web/App/Data]
+        AZURE_SPOKE2[Spoke 2: Dev<br/>10.102.0.0/16<br/>Web/App/Data]
+        AZURE_SPOKE3[Spoke 3: Security<br/>10.103.0.0/16<br/>Defender/Sentinel]
+
+        AZURE_VPNGW <--> AZURE_FW
+        AZURE_FW <-.->|VNet Peering| AZURE_SPOKE1
+        AZURE_FW <-.->|VNet Peering| AZURE_SPOKE2
+        AZURE_FW <-.->|VNet Peering| AZURE_SPOKE3
+    end
+
+    VGW <-->|BGP: AS 64512<br/>Advertise 10.0.0.0/12| TUNNEL1
+    TUNNEL1 <-->|BGP: AS 65515<br/>Advertise 10.100.0.0/12| AZURE_VPNGW
+    VGW -.->|Automatic Failover<br/>30-60s| TUNNEL2
+    TUNNEL2 -.->|Backup Path| AZURE_VPNGW
+
+    AWS_SPOKE1 -.->|Route via TGW/VPN<br/>10.101.0.0/16| AZURE_SPOKE1
+    AWS_SPOKE2 -.->|Route via TGW/VPN<br/>10.102.0.0/16| AZURE_SPOKE2
+    AWS_SPOKE3 -.->|Security Data<br/>Cross-Cloud Logs| AZURE_SPOKE3
+
+    style AWS fill:#FF9900,stroke:#232F3E,stroke-width:3px,color:#fff
+    style AZURE fill:#0078D4,stroke:#003366,stroke-width:3px,color:#fff
+    style VPN_TUNNEL fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    style AWS_HUB fill:#FFB366,stroke:#232F3E,stroke-width:2px
+    style AZURE_HUB fill:#4DA6FF,stroke:#003366,stroke-width:2px

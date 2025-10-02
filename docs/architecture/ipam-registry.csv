@@ -1,0 +1,22 @@
+Cloud,VPC/VNet Name,CIDR,Status,Owner,Created,Purpose,Notes
+AWS,aws-hub-vpc,10.0.0.0/16,Active,Platform Team,2025-10-02,Hub with shared services,NAT + TGW + VPN Gateway
+AWS,aws-spoke-prod-vpc,10.1.0.0/16,Active,App Team,2025-10-02,Production workloads,Web/App/Data tiers
+AWS,aws-spoke-dev-vpc,10.2.0.0/16,Active,App Team,2025-10-02,Development environment,Testing and staging
+AWS,aws-spoke-security-vpc,10.3.0.0/16,Active,Security Team,2025-10-02,Security tooling,GuardDuty + CloudTrail + Config
+AWS,Reserved-AWS-1,10.4.0.0/16,Reserved,Platform Team,2025-10-02,Future expansion,
+AWS,Reserved-AWS-2,10.5.0.0/16,Reserved,Platform Team,2025-10-02,Future expansion,
+AWS,Reserved-AWS-3,10.6.0.0/16,Reserved,Platform Team,2025-10-02,Future expansion,
+AWS,Reserved-AWS-4,10.7.0.0/16,Reserved,Platform Team,2025-10-02,Future expansion,
+AWS,Reserved-AWS-Block,10.8.0.0/13,Reserved,Platform Team,2025-10-02,Future AWS expansion,Holds 10.8-15.x.x
+Azure,azure-hub-vnet,10.100.0.0/16,Active,Platform Team,2025-10-02,Hub with firewall,Azure Firewall + Bastion + VPN Gateway
+Azure,azure-spoke-prod-vnet,10.101.0.0/16,Active,App Team,2025-10-02,Production workloads,Web/App/Data tiers
+Azure,azure-spoke-dev-vnet,10.102.0.0/16,Active,App Team,2025-10-02,Development environment,Testing and staging
+Azure,azure-spoke-security-vnet,10.103.0.0/16,Active,Security Team,2025-10-02,Security monitoring,Defender + Sentinel + Policy
+Azure,Reserved-Azure-1,10.104.0.0/16,Reserved,Platform Team,2025-10-02,Future expansion,
+Azure,Reserved-Azure-2,10.105.0.0/16,Reserved,Platform Team,2025-10-02,Future expansion,
+Azure,Reserved-Azure-3,10.106.0.0/16,Reserved,Platform Team,2025-10-02,Future expansion,
+Azure,Reserved-Azure-4,10.107.0.0/16,Reserved,Platform Team,2025-10-02,Future expansion,
+Azure,Reserved-Azure-Block,10.108.0.0/13,Reserved,Platform Team,2025-10-02,Future Azure expansion,Holds 10.108-111.x.x
+GCP,Reserved-GCP,10.200.0.0/12,Reserved,Platform Team,2025-10-02,Future GCP deployment,Phase 2 expansion
+On-Prem,Reserved-OnPrem,10.220.0.0/12,Reserved,Platform Team,2025-10-02,Future on-premises connectivity,ExpressRoute/Direct Connect
+Multi-Region,Reserved-MultiRegion,10.240.0.0/12,Reserved,Platform Team,2025-10-02,Future multi-region expansion,DR and geo-redundancy
