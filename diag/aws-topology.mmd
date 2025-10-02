@@ -1,0 +1,73 @@
+graph TB
+    subgraph Internet
+        IGW[Internet Gateway]
+    end
+
+    subgraph AWS_HUB["AWS Hub VPC (10.0.0.0/16)"]
+        subgraph DMZ["DMZ Zone"]
+            NAT1[NAT Gateway 1a<br/>10.0.0.0/24]
+            NAT2[NAT Gateway 1b<br/>10.0.1.0/24]
+            BASTION[Bastion Host<br/>10.0.10.0/24]
+        end
+
+        subgraph SHARED["Shared Services"]
+            DNS[Route53 Resolver<br/>10.0.20.0/23]
+            AD[Active Directory]
+            MON[CloudWatch/Monitoring]
+        end
+
+        TGW[Transit Gateway<br/>Direct Spoke Routing]
+        VPN[VPN Gateway<br/>To Azure]
+    end
+
+    subgraph SPOKE1["Spoke 1: Production (10.1.0.0/16)"]
+        WEB1[Web Tier<br/>10.1.0.0/22<br/>1,019 IPs]
+        APP1[App Tier<br/>10.1.10.0/22<br/>1,019 IPs]
+        DB1[Data Tier<br/>10.1.20.0/23<br/>507 IPs]
+    end
+
+    subgraph SPOKE2["Spoke 2: Development (10.2.0.0/16)"]
+        WEB2[Web Tier<br/>10.2.0.0/22<br/>1,019 IPs]
+        APP2[App Tier<br/>10.2.10.0/22<br/>1,019 IPs]
+        DB2[Data Tier<br/>10.2.20.0/23<br/>507 IPs]
+    end
+
+    subgraph SPOKE3["Spoke 3: Security (10.3.0.0/16)"]
+        GD[GuardDuty<br/>Threat Detection]
+        CT[CloudTrail<br/>Audit Logs]
+        CONFIG[AWS Config<br/>Compliance]
+    end
+
+    IGW -->|Public Internet| NAT1
+    IGW -->|Public Internet| NAT2
+    NAT1 -.->|Outbound 0.0.0.0/0| TGW
+    NAT2 -.->|Outbound 0.0.0.0/0| TGW
+
+    TGW <-->|10.1.0.0/16| SPOKE1
+    TGW <-->|10.2.0.0/16| SPOKE2
+    TGW <-->|10.3.0.0/16| SPOKE3
+    TGW -.->|Direct Spoke-to-Spoke| SPOKE1
+    TGW -.->|Direct Spoke-to-Spoke| SPOKE2
+
+    VPN -.->|10.100.0.0/12<br/>To Azure| TGW
+
+    WEB1 -->|App Traffic| APP1
+    APP1 -->|DB Queries| DB1
+
+    WEB2 -->|App Traffic| APP2
+    APP2 -->|DB Queries| DB2
+
+    SPOKE1 -.->|Security Logs| SPOKE3
+    SPOKE2 -.->|Security Logs| SPOKE3
+
+    BASTION -.->|SSH/RDP Mgmt| SPOKE1
+    BASTION -.->|SSH/RDP Mgmt| SPOKE2
+
+    DNS -.->|DNS Resolution| SPOKE1
+    DNS -.->|DNS Resolution| SPOKE2
+
+    style AWS_HUB fill:#FF9900,stroke:#232F3E,stroke-width:3px,color:#fff
+    style SPOKE1 fill:#00A1C9,stroke:#232F3E,stroke-width:2px
+    style SPOKE2 fill:#5294CF,stroke:#232F3E,stroke-width:2px
+    style SPOKE3 fill:#DD344C,stroke:#232F3E,stroke-width:2px
+    style Internet fill:#E8E8E8,stroke:#666,stroke-width:2px

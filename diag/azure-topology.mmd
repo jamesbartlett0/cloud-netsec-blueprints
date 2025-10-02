@@ -1,0 +1,75 @@
+graph TB
+    subgraph Internet
+        INET[Internet]
+    end
+
+    subgraph AZURE_HUB["Azure Hub VNet (10.100.0.0/16)"]
+        subgraph FIREWALL["Firewall Zone"]
+            AZFW[Azure Firewall<br/>10.100.0.0/24<br/>Centralized Egress]
+        end
+
+        subgraph BASTION_ZONE["Bastion Zone"]
+            AZBAST[Azure Bastion<br/>10.100.1.0/26<br/>Secure RDP/SSH]
+        end
+
+        subgraph GATEWAY["Gateway Zone"]
+            VPNGW[VPN Gateway<br/>10.100.2.0/27<br/>Active-Active]
+        end
+
+        subgraph SHARED["Shared Services"]
+            DNS[Private DNS<br/>10.100.30.0/23]
+            MON[Azure Monitor]
+            LOG[Log Analytics]
+        end
+    end
+
+    subgraph SPOKE1["Spoke 1: Production (10.101.0.0/16)"]
+        WEB1[Web Tier<br/>10.101.0.0/22<br/>1,019 IPs]
+        APP1[App Tier<br/>10.101.10.0/22<br/>1,019 IPs]
+        DB1[Data Tier<br/>10.101.20.0/23<br/>507 IPs]
+    end
+
+    subgraph SPOKE2["Spoke 2: Development (10.102.0.0/16)"]
+        WEB2[Web Tier<br/>10.102.0.0/22<br/>1,019 IPs]
+        APP2[App Tier<br/>10.102.10.0/22<br/>1,019 IPs]
+        DB2[Data Tier<br/>10.102.20.0/23<br/>507 IPs]
+    end
+
+    subgraph SPOKE3["Spoke 3: Security (10.103.0.0/16)"]
+        DEFENDER[Defender for Cloud<br/>Threat Protection]
+        SENTINEL[Microsoft Sentinel<br/>SIEM]
+        POLICY[Azure Policy<br/>Compliance]
+    end
+
+    INET -->|Inbound HTTPS| AZFW
+    AZFW -->|Outbound 0.0.0.0/0| INET
+
+    AZFW <-->|VNet Peering| SPOKE1
+    AZFW <-->|VNet Peering| SPOKE2
+    AZFW <-->|VNet Peering| SPOKE3
+
+    SPOKE1 -.->|Direct Peering| SPOKE2
+    SPOKE2 -.->|Direct Peering| SPOKE1
+
+    VPNGW -.->|10.0.0.0/12<br/>To AWS| AZFW
+
+    WEB1 -->|App Traffic| APP1
+    APP1 -->|DB Queries| DB1
+
+    WEB2 -->|App Traffic| APP2
+    APP2 -->|DB Queries| DB2
+
+    SPOKE1 -.->|Security Logs| SPOKE3
+    SPOKE2 -.->|Security Logs| SPOKE3
+
+    AZBAST -.->|RDP/SSH Mgmt| SPOKE1
+    AZBAST -.->|RDP/SSH Mgmt| SPOKE2
+
+    DNS -.->|DNS Resolution| SPOKE1
+    DNS -.->|DNS Resolution| SPOKE2
+
+    style AZURE_HUB fill:#0078D4,stroke:#003366,stroke-width:3px,color:#fff
+    style SPOKE1 fill:#50E6FF,stroke:#003366,stroke-width:2px
+    style SPOKE2 fill:#00BCF2,stroke:#003366,stroke-width:2px
+    style SPOKE3 fill:#E81123,stroke:#003366,stroke-width:2px
+    style Internet fill:#E8E8E8,stroke:#666,stroke-width:2px
