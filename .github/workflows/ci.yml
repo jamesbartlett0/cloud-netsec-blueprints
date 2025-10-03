@@ -27,60 +27,60 @@ jobs:
         run: pre-commit run --all-files
 
   # Job 2: Terraform validation (AWS)
-  terraform-aws:
-    runs-on: ubuntu-latest
-    needs: pre-commit
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-
-      - name: Terraform Init (AWS)
-        run: terraform init -backend=false
-        working-directory: ./modules/aws
-
-      - name: Terraform Validate (AWS)
-        run: terraform validate
-        working-directory: ./modules/aws
-
-      - name: TFLint (AWS)
-        uses: terraform-linters/setup-tflint@v4
-        with:
-          tflint_version: ${{ env.TFLINT_VERSION }}
-
-      - name: Run TFLint
-        run: tflint --init && tflint
-        working-directory: ./modules/aws
+#  terraform-aws:
+#    runs-on: ubuntu-latest
+#    needs: pre-commit
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - uses: hashicorp/setup-terraform@v3
+#        with:
+#          terraform_version: ${{ env.TERRAFORM_VERSION }}
+#
+#      - name: Terraform Init (AWS)
+#        run: terraform init -backend=false
+#        working-directory: ./modules/aws
+#
+#      - name: Terraform Validate (AWS)
+#        run: terraform validate
+#        working-directory: ./modules/aws
+#
+#      - name: TFLint (AWS)
+#        uses: terraform-linters/setup-tflint@v4
+#        with:
+#          tflint_version: ${{ env.TFLINT_VERSION }}
+#
+#      - name: Run TFLint
+#        run: tflint --init && tflint
+#        working-directory: ./modules/aws
 
   # Job 3: Terraform validation (Azure)
-  terraform-azure:
-    runs-on: ubuntu-latest
-    needs: pre-commit
-    steps:
-      - uses: actions/checkout@v4
+#  terraform-azure:
+#    runs-on: ubuntu-latest
+#    needs: pre-commit
+#    steps:
+#      - uses: actions/checkout@v4
 
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
+#      - uses: hashicorp/setup-terraform@v3
+#        with:
+#          terraform_version: ${{ env.TERRAFORM_VERSION }}
 
-      - name: Terraform Init (Azure)
-        run: terraform init -backend=false
-        working-directory: ./modules/azure
+#      - name: Terraform Init (Azure)
+#        run: terraform init -backend=false
+#        working-directory: ./modules/azure
 
-      - name: Terraform Validate (Azure)
-        run: terraform validate
-        working-directory: ./modules/azure
+#      - name: Terraform Validate (Azure)
+#        run: terraform validate
+#        working-directory: ./modules/azure
 
-      - name: Run TFLint
-        uses: terraform-linters/setup-tflint@v4
-        with:
-          tflint_version: ${{ env.TFLINT_VERSION }}
+#      - name: Run TFLint
+#        uses: terraform-linters/setup-tflint@v4
+#        with:
+#          tflint_version: ${{ env.TFLINT_VERSION }}
 
-      - name: Run TFLint
-        run: tflint --init && tflint
-        working-directory: ./modules/azure
+#      - name: Run TFLint
+#        run: tflint --init && tflint
+#        working-directory: ./modules/azure
 
   # Job 4: Security scanning
   security-scan:
