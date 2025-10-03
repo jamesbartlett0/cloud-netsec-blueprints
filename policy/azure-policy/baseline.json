@@ -1,0 +1,333 @@
+{
+  "properties": {
+    "displayName": "Multi-Cloud Security Baseline",
+    "description": "Enforces security controls for Azure resources in hub-spoke network architecture",
+    "policyType": "Custom",
+    "mode": "All",
+    "metadata": {
+      "version": "1.0.0",
+      "category": "Security",
+      "source": "cloud-netsec-blueprints"
+    },
+    "parameters": {
+      "allowedLocations": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed Azure Regions",
+          "description": "List of allowed regions for resource deployment"
+        },
+        "defaultValue": [
+          "eastus",
+          "westus2"
+        ]
+      },
+      "requiredTags": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Required Tags",
+          "description": "List of mandatory tags for all resources"
+        },
+        "defaultValue": [
+          "Environment",
+          "Owner",
+          "CostCenter",
+          "DataClassification"
+        ]
+      }
+    },
+    "policyRule": {
+      "if": {
+        "anyOf": [
+          {
+            "allOf": [
+              {
+                "field": "location",
+                "notIn": "[parameters('allowedLocations')]"
+              },
+              {
+                "field": "location",
+                "notEquals": "global"
+              }
+            ]
+          },
+          {
+            "field": "tags['Environment']",
+            "exists": "false"
+          },
+          {
+            "field": "tags['Owner']",
+            "exists": "false"
+          },
+          {
+            "field": "tags['CostCenter']",
+            "exists": "false"
+          },
+          {
+            "field": "tags['DataClassification']",
+            "exists": "false"
+          }
+        ]
+      },
+      "then": {
+        "effect": "deny"
+      }
+    }
+  },
+  "additionalPolicies": [
+    {
+      "displayName": "Require encryption for managed disks",
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "type",
+              "equals": "Microsoft.Compute/disks"
+            },
+            {
+              "field": "Microsoft.Compute/disks/encryption.type",
+              "notEquals": "EncryptionAtRestWithPlatformKey"
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    },
+    {
+      "displayName": "Require HTTPS for storage accounts",
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "type",
+              "equals": "Microsoft.Storage/storageAccounts"
+            },
+            {
+              "field": "Microsoft.Storage/storageAccounts/supportsHttpsTrafficOnly",
+              "notEquals": "true"
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    },
+    {
+      "displayName": "Deny public IP for VMs in production",
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "type",
+              "equals": "Microsoft.Network/networkInterfaces"
+            },
+            {
+              "field": "tags['Environment']",
+              "equals": "prod"
+            },
+            {
+              "field": "Microsoft.Network/networkInterfaces/ipConfigurations[*].publicIpAddress.id",
+              "exists": "true"
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    },
+    {
+      "displayName": "Require Network Security Group on subnets",
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "type",
+              "equals": "Microsoft.Network/virtualNetworks/subnets"
+            },
+            {
+              "field": "Microsoft.Network/virtualNetworks/subnets/networkSecurityGroup.id",
+              "exists": "false"
+            },
+            {
+              "field": "name",
+              "notIn": [
+                "GatewaySubnet",
+                "AzureFirewallSubnet",
+                "AzureBastionSubnet"
+              ]
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    },
+    {
+      "displayName": "Deny NSG rules allowing internet on SSH/RDP",
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "type",
+              "equals": "Microsoft.Network/networkSecurityGroups/securityRules"
+            },
+            {
+              "field": "Microsoft.Network/networkSecurityGroups/securityRules/direction",
+              "equals": "Inbound"
+            },
+            {
+              "field": "Microsoft.Network/networkSecurityGroups/securityRules/access",
+              "equals": "Allow"
+            },
+            {
+              "anyOf": [
+                {
+                  "field": "Microsoft.Network/networkSecurityGroups/securityRules/destinationPortRange",
+                  "in": [
+                    "22",
+                    "3389"
+                  ]
+                },
+                {
+                  "field": "Microsoft.Network/networkSecurityGroups/securityRules/destinationPortRanges[*]",
+                  "in": [
+                    "22",
+                    "3389"
+                  ]
+                }
+              ]
+            },
+            {
+              "anyOf": [
+                {
+                  "field": "Microsoft.Network/networkSecurityGroups/securityRules/sourceAddressPrefix",
+                  "equals": "*"
+                },
+                {
+                  "field": "Microsoft.Network/networkSecurityGroups/securityRules/sourceAddressPrefix",
+                  "equals": "Internet"
+                },
+                {
+                  "field": "Microsoft.Network/networkSecurityGroups/securityRules/sourceAddressPrefixes[*]",
+                  "equals": "*"
+                }
+              ]
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    },
+    {
+      "displayName": "Require Azure Key Vault for secrets",
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "type",
+              "equals": "Microsoft.KeyVault/vaults"
+            },
+            {
+              "field": "Microsoft.KeyVault/vaults/enableSoftDelete",
+              "notEquals": "true"
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    },
+    {
+      "displayName": "Enforce TLS 1.2 for Azure SQL",
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "type",
+              "equals": "Microsoft.Sql/servers"
+            },
+            {
+              "field": "Microsoft.Sql/servers/minimalTlsVersion",
+              "notEquals": "1.2"
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    },
+    {
+      "displayName": "Require diagnostic logs for VNets",
+      "policyRule": {
+        "if": {
+          "field": "type",
+          "equals": "Microsoft.Network/virtualNetworks"
+        },
+        "then": {
+          "effect": "auditIfNotExists",
+          "details": {
+            "type": "Microsoft.Insights/diagnosticSettings",
+            "existenceCondition": {
+              "allOf": [
+                {
+                  "field": "Microsoft.Insights/diagnosticSettings/logs[*].enabled",
+                  "equals": "true"
+                },
+                {
+                  "field": "Microsoft.Insights/diagnosticSettings/metrics[*].enabled",
+                  "equals": "true"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "displayName": "Deny creation of resources outside managed resource groups",
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "type",
+              "notEquals": "Microsoft.Resources/resourceGroups"
+            },
+            {
+              "value": "[resourceGroup().name]",
+              "notLike": "rg-*"
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    },
+    {
+      "displayName": "Require Azure Defender for all subscription resources",
+      "policyRule": {
+        "if": {
+          "field": "type",
+          "equals": "Microsoft.Security/pricings"
+        },
+        "then": {
+          "effect": "audit",
+          "details": {
+            "existenceCondition": {
+              "field": "Microsoft.Security/pricings/pricingTier",
+              "equals": "Standard"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
